@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>UCFL Dashboard</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        body { background-color: #0B0B0B; }
+        .glass-card { background: #141414; border: 1px solid #262626; }
+    </style>
+</head>
+<body class="text-white">
+    <div class="flex h-screen">
+        <aside class="w-64 border-r border-zinc-800 p-6 flex flex-col">
+            <h1 class="text-2xl font-black italic tracking-tighter mb-10 text-blue-500">UCFL</h1>
+            <nav class="space-y-6 text-zinc-400 font-medium">
+                <a href="#" class="block text-white">Home</a>
+                <a href="#" class="block hover:text-white">Standings</a>
+                <a href="#" class="block hover:text-white">Playoffs</a>
+                <a href="#" class="block hover:text-white">Teams</a>
+            </nav>
+        </aside>
+
+        <main class="flex-1 p-10 overflow-y-auto">
+            <header class="mb-10">
+                <h2 class="text-4xl font-bold">Welcome back, Commish</h2>
+                <p class="text-zinc-500">Here is what's happening in the league today.</p>
+            </header>
+
+            <div class="grid grid-cols-1 md:grid-cols-4 gap-6 mb-12">
+                <div class="glass-card p-6 rounded-2xl border-l-4 border-l-blue-500">
+                    <p class="text-zinc-500 text-sm font-semibold uppercase">Total Teams</p>
+                    <h3 class="text-3xl font-bold mt-1">8</h3>
+                </div>
+                <div class="glass-card p-6 rounded-2xl border-l-4 border-l-green-500">
+                    <p class="text-zinc-500 text-sm font-semibold uppercase">Games Played</p>
+                    <h3 class="text-3xl font-bold mt-1">24</h3>
+                </div>
+                <div class="glass-card p-6 rounded-2xl border-l-4 border-l-purple-500">
+                    <p class="text-zinc-500 text-sm font-semibold uppercase">Discord Members</p>
+                    <h3 class="text-3xl font-bold mt-1">142</h3>
+                </div>
+                <div class="glass-card p-6 rounded-2xl border-l-4 border-l-orange-500">
+                    <p class="text-zinc-500 text-sm font-semibold uppercase">Current Season</p>
+                    <h3 class="text-3xl font-bold mt-1">S4</h3>
+                </div>
+            </div>
+
+            <h3 class="text-2xl font-bold mb-6">Top Teams</h3>
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                <div class="glass-card p-6 rounded-3xl relative overflow-hidden">
+                    <span class="absolute top-4 right-6 text-zinc-800 text-6xl font-black">#1</span>
+                    <div class="relative z-10">
+                        <h4 class="text-xl font-bold">South Carolina</h4>
+                        <p class="text-green-400 font-mono mt-1">4 - 1</p>
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+</body>
+</html>
