@@ -3,103 +3,334 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>UCFL Admin Dashboard</title>
+    <title>UCFL League Dashboard</title>
     <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/lucide@latest"></script>
     <style>
-        body { background-color: #0B0B0B; color: white; font-family: sans-serif; }
-        .glass-card { background: #141414; border: 1px solid #262626; transition: all 0.2s; }
-        .modal { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.8); align-items: center; justify-content: center; z-index: 50; }
+        body { background-color: #0B0B0B; color: white; font-family: 'Inter', sans-serif; }
+        
+        /* Glassmorphism & Borders */
+        .glass-card { 
+            background: #141414; 
+            border: 1px solid #262626; 
+            transition: all 0.2s; 
+        }
+        .glass-card:hover { border-color: #404040; }
+
+        /* Custom Scrollbar */
+        ::-webkit-scrollbar { width: 8px; }
+        ::-webkit-scrollbar-track { background: #0B0B0B; }
+        ::-webkit-scrollbar-thumb { background: #333; border-radius: 4px; }
+
+        /* Modal styling */
+        .modal { 
+            display: none; 
+            position: fixed; 
+            inset: 0; 
+            background: rgba(0,0,0,0.85); 
+            backdrop-filter: blur(5px);
+            align-items: center; 
+            justify-content: center; 
+            z-index: 50; 
+        }
         .modal.active { display: flex; }
+
+        /* Hidden elements for non-admins */
+        .admin-only { display: none !important; }
+        body.is-admin .admin-only { display: flex !important; }
+        body.is-admin .admin-only-block { display: block !important; }
     </style>
 </head>
 <body>
+
     <div class="flex h-screen">
-        <aside class="w-64 border-r border-zinc-800 p-6 flex flex-col">
-            <h1 class="text-2xl font-black italic tracking-tighter mb-10 text-blue-500">UCFL</h1>
-            <nav class="space-y-4 text-zinc-400 font-medium">
-                <button onclick="showSection('home')" class="nav-btn block w-full text-left text-white hover:text-blue-400 transition">Home</button>
-                <button onclick="showSection('teams')" class="nav-btn block w-full text-left hover:text-blue-400 transition">Manage Teams</button>
+        <aside class="w-64 border-r border-zinc-800 flex flex-col bg-[#0f0f0f]">
+            <div class="p-6">
+                <h1 class="text-2xl font-black italic tracking-tighter text-white">UCFL <span class="text-zinc-600 text-xs not-italic font-normal block">United College Football League</span></h1>
+            </div>
+            
+            <nav class="flex-1 overflow-y-auto px-4 space-y-2 text-sm font-medium text-zinc-400">
+                <a href="#" class="flex items-center gap-3 p-3 text-white bg-zinc-800/50 rounded-lg"><i data-lucide="trophy"></i> Home</a>
+                <a href="#" class="flex items-center gap-3 p-3 hover:text-white hover:bg-zinc-800/50 rounded-lg transition"><i data-lucide="bar-chart-2"></i> Standings</a>
+                <a href="#" class="flex items-center gap-3 p-3 hover:text-white hover:bg-zinc-800/50 rounded-lg transition"><i data-lucide="git-merge"></i> Playoff Bracket</a>
+                <a href="#" class="flex items-center gap-3 p-3 hover:text-white hover:bg-zinc-800/50 rounded-lg transition"><i data-lucide="users"></i> Players</a>
+                <a href="#" class="flex items-center gap-3 p-3 hover:text-white hover:bg-zinc-800/50 rounded-lg transition"><i data-lucide="calendar"></i> Schedule</a>
             </nav>
+
+            <div class="p-4 border-t border-zinc-800">
+                <button onclick="toggleAdminLogin()" id="loginBtn" class="flex items-center gap-2 text-xs text-zinc-500 hover:text-white w-full">
+                    <i data-lucide="lock"></i> Admin Access
+                </button>
+                <button onclick="logout()" id="logoutBtn" class="hidden flex items-center gap-2 text-xs text-red-500 hover:text-red-400 w-full mt-2">
+                    <i data-lucide="log-out"></i> Logout
+                </button>
+            </div>
         </aside>
 
-        <main class="flex-1 p-10 overflow-y-auto">
-            <section id="home-section">
-                <header class="flex justify-between items-center mb-10">
-                    <div>
-                        <h2 class="text-4xl font-bold">League Overview</h2>
-                        <p class="text-zinc-500">Real-time stats for the UCFL.</p>
-                    </div>
-                    <button onclick="openModal()" class="bg-blue-600 hover:bg-blue-700 px-6 py-2 rounded-full font-bold">+ Add Team</button>
-                </header>
+        <main class="flex-1 p-8 overflow-y-auto relative">
+            
+            <div class="admin-only bg-blue-900/20 border border-blue-500/30 p-4 rounded-xl mb-8 flex justify-between items-center">
+                <div class="flex items-center gap-3 text-blue-400">
+                    <i data-lucide="shield-check"></i>
+                    <span class="font-bold">Admin Mode Active</span>
+                </div>
+                <button onclick="openModal('teamModal')" class="bg-blue-600 hover:bg-blue-500 text-white px-4 py-2 rounded-lg text-sm font-bold shadow-lg shadow-blue-900/20 transition">
+                    + Add New Team
+                </button>
+            </div>
 
-                <div class="grid grid-cols-1 md:grid-cols-4 gap-6 mb-12" id="stats-grid">
+            <div class="grid grid-cols-1 md:grid-cols-4 gap-4 mb-10">
+                <div class="glass-card p-5 rounded-xl border-l-4 border-l-blue-500 relative group">
+                    <div class="flex justify-between items-start">
+                        <div>
+                            <p class="text-blue-500 text-xs font-bold uppercase tracking-wider mb-1">Total Teams</p>
+                            <h3 class="text-3xl font-bold text-white" id="stat-teams">0</h3>
+                        </div>
+                        <i data-lucide="trophy" class="text-zinc-700"></i>
                     </div>
+                </div>
 
-                <h3 class="text-2xl font-bold mb-6">Current Rankings</h3>
-                <div class="grid grid-cols-1 md:grid-cols-3 gap-6" id="team-list">
+                <div class="glass-card p-5 rounded-xl border-l-4 border-l-green-500 group cursor-pointer" onclick="editStat('games')">
+                    <div class="flex justify-between items-start">
+                        <div>
+                            <p class="text-green-500 text-xs font-bold uppercase tracking-wider mb-1">Games Played</p>
+                            <h3 class="text-3xl font-bold text-white" id="stat-games">19</h3>
+                        </div>
+                        <i data-lucide="calendar" class="text-zinc-700"></i>
                     </div>
-            </section>
+                    <p class="admin-only text-[10px] text-zinc-500 mt-2">Click card to edit</p>
+                </div>
+
+                <div class="glass-card p-5 rounded-xl border-l-4 border-l-purple-500 cursor-pointer" onclick="editStat('discord')">
+                    <div class="flex justify-between items-start">
+                        <div>
+                            <p class="text-purple-500 text-xs font-bold uppercase tracking-wider mb-1">Discord Members</p>
+                            <h3 class="text-3xl font-bold text-white" id="stat-discord">1,300</h3>
+                        </div>
+                        <i data-lucide="trending-up" class="text-zinc-700"></i>
+                    </div>
+                    <p class="admin-only text-[10px] text-zinc-500 mt-2">Click card to edit</p>
+                </div>
+
+                <div class="glass-card p-5 rounded-xl border-l-4 border-l-orange-500 cursor-pointer" onclick="editStat('season')">
+                    <div class="flex justify-between items-start">
+                        <div>
+                            <p class="text-orange-500 text-xs font-bold uppercase tracking-wider mb-1">Current Season</p>
+                            <h3 class="text-3xl font-bold text-white" id="stat-season">9</h3>
+                        </div>
+                        <i data-lucide="award" class="text-zinc-700"></i>
+                    </div>
+                    <p class="admin-only text-[10px] text-zinc-500 mt-2">Click card to edit</p>
+                </div>
+            </div>
+
+            <div class="flex justify-between items-end mb-6">
+                <h2 class="text-2xl font-bold">Top Teams</h2>
+                <a href="#" class="text-blue-500 text-sm hover:underline flex items-center gap-1">Full Standings <i data-lucide="arrow-right" class="w-4 h-4"></i></a>
+            </div>
+
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4" id="team-grid">
+                </div>
+
         </main>
     </div>
 
-    <div id="teamModal" class="modal p-4">
-        <div class="bg-[#1a1a1a] p-8 rounded-3xl border border-zinc-800 w-full max-w-md">
-            <h2 class="text-2xl font-bold mb-6">Add New Team</h2>
+    <div id="loginModal" class="modal">
+        <div class="bg-[#1a1a1a] p-8 rounded-2xl border border-zinc-800 w-80 text-center">
+            <h3 class="text-xl font-bold mb-4">Admin Access</h3>
+            <input type="password" id="adminPassword" placeholder="Enter Password" class="w-full bg-black border border-zinc-700 p-3 rounded-lg text-white focus:border-blue-500 focus:outline-none mb-4">
+            <button onclick="checkPassword()" class="w-full bg-blue-600 hover:bg-blue-500 py-2 rounded-lg font-bold">Unlock</button>
+            <button onclick="closeModal('loginModal')" class="w-full text-zinc-500 text-sm mt-4 hover:text-white">Cancel</button>
+        </div>
+    </div>
+
+    <div id="teamModal" class="modal">
+        <div class="bg-[#1a1a1a] p-8 rounded-2xl border border-zinc-800 w-96">
+            <h3 class="text-xl font-bold mb-6">Add Team</h3>
             <div class="space-y-4">
-                <input type="text" id="teamName" placeholder="Team Name" class="w-full bg-[#0b0b0b] border border-zinc-700 p-3 rounded-xl focus:outline-none focus:border-blue-500">
-                <input type="text" id="teamRecord" placeholder="Record (e.g. 4-1)" class="w-full bg-[#0b0b0b] border border-zinc-700 p-3 rounded-xl focus:outline-none focus:border-blue-500">
-                <div class="flex gap-3 mt-6">
-                    <button onclick="closeModal()" class="flex-1 text-zinc-400 hover:text-white">Cancel</button>
-                    <button onclick="addTeam()" class="flex-1 bg-blue-600 p-3 rounded-xl font-bold">Save Team</button>
+                <div>
+                    <label class="text-xs text-zinc-500 uppercase font-bold">Team Name</label>
+                    <input type="text" id="teamName" class="w-full bg-black border border-zinc-700 p-3 rounded-lg text-white mt-1">
                 </div>
+                <div class="flex gap-4">
+                    <div>
+                        <label class="text-xs text-zinc-500 uppercase font-bold">Wins</label>
+                        <input type="number" id="teamWins" class="w-full bg-black border border-zinc-700 p-3 rounded-lg text-white mt-1">
+                    </div>
+                    <div>
+                        <label class="text-xs text-zinc-500 uppercase font-bold">Losses</label>
+                        <input type="number" id="teamLosses" class="w-full bg-black border border-zinc-700 p-3 rounded-lg text-white mt-1">
+                    </div>
+                </div>
+                <button onclick="addTeam()" class="w-full bg-green-600 hover:bg-green-500 py-3 rounded-lg font-bold mt-2">Save Team</button>
+                <button onclick="closeModal('teamModal')" class="w-full text-zinc-500 mt-2 hover:text-white">Cancel</button>
             </div>
         </div>
     </div>
 
     <script>
-        let teams = JSON.parse(localStorage.getItem('ucfl-teams')) || [
-            { id: 1, name: "South Carolina", record: "4-1" }
+        // --- CONFIGURATION ---
+        const PASSWORD = "admin"; // CHANGE THIS PASSWORD!
+
+        // --- STATE MANAGEMENT ---
+        let isAdmin = localStorage.getItem('ucfl_isAdmin') === 'true';
+        
+        // Initial Data (If nothing saved)
+        const defaultTeams = [
+            { id: 1, name: "South Carolina", wins: 4, losses: 1, rank: 1 },
+            { id: 2, name: "Michigan Wolverines", wins: 4, losses: 0, rank: 2 },
+            { id: 3, name: "Texas A&M", wins: 3, losses: 2, rank: 3 },
+            { id: 4, name: "North Carolina", wins: 3, losses: 2, rank: 4 }
         ];
 
-        function renderTeams() {
-            const container = document.getElementById('team-list');
-            container.innerHTML = '';
-            
-            teams.forEach((team, index) => {
-                container.innerHTML += `
-                    <div class="glass-card p-6 rounded-3xl relative group">
-                        <button onclick="removeTeam(${index})" class="absolute top-4 right-4 text-zinc-600 hover:text-red-500 opacity-0 group-hover:opacity-100 transition">✕</button>
-                        <span class="text-zinc-700 text-5xl font-black absolute bottom-4 right-6 italic">#${index + 1}</span>
-                        <h4 class="text-xl font-bold">${team.name}</h4>
-                        <p class="text-blue-400 font-mono mt-1 uppercase text-sm tracking-widest">${team.record}</p>
+        let teams = JSON.parse(localStorage.getItem('ucfl_teams')) || defaultTeams;
+        let stats = JSON.parse(localStorage.getItem('ucfl_stats')) || { games: 19, discord: "1,300", season: 9 };
+
+        // --- INIT ---
+        document.addEventListener('DOMContentLoaded', () => {
+            lucide.createIcons();
+            render();
+            updateAdminUI();
+        });
+
+        // --- RENDER FUNCTIONS ---
+        function render() {
+            const grid = document.getElementById('team-grid');
+            grid.innerHTML = '';
+
+            // Update Stats
+            document.getElementById('stat-teams').innerText = teams.length;
+            document.getElementById('stat-games').innerText = stats.games;
+            document.getElementById('stat-discord').innerText = stats.discord;
+            document.getElementById('stat-season').innerText = stats.season;
+
+            // Sort teams by rank
+            teams.sort((a,b) => a.rank - b.rank);
+
+            teams.forEach((team) => {
+                grid.innerHTML += `
+                    <div class="glass-card p-6 rounded-2xl relative group min-h-[180px] flex flex-col justify-between">
+                        <button onclick="deleteTeam(${team.id})" class="admin-only absolute top-3 right-3 bg-red-500/20 text-red-500 p-1.5 rounded-lg hover:bg-red-500 hover:text-white transition">
+                            <i data-lucide="trash-2" class="w-4 h-4"></i>
+                        </button>
+
+                        <div>
+                            <div class="flex justify-between items-start mb-4">
+                                <span class="text-3xl font-black text-white/90">#${team.rank}</span>
+                                <div class="w-10 h-10 bg-zinc-800 rounded-full flex items-center justify-center text-xs font-bold text-zinc-500">
+                                    ${team.name.substring(0,2).toUpperCase()}
+                                </div>
+                            </div>
+                            <h3 class="text-lg font-bold leading-tight mb-4">${team.name}</h3>
+                        </div>
+
+                        <div class="flex gap-4 text-sm">
+                            <div>
+                                <span class="text-green-500 font-bold text-xl">${team.wins}</span>
+                                <span class="text-zinc-500 text-xs uppercase block">Wins</span>
+                            </div>
+                            <div>
+                                <span class="text-red-500 font-bold text-xl">${team.losses}</span>
+                                <span class="text-zinc-500 text-xs uppercase block">Losses</span>
+                            </div>
+                        </div>
                     </div>
                 `;
             });
-            localStorage.setItem('ucfl-teams', JSON.stringify(teams));
+            lucide.createIcons(); // Re-init icons for new elements
         }
 
-        function addTeam() {
-            const name = document.getElementById('teamName').value;
-            const record = document.getElementById('teamRecord').value;
-            if(name && record) {
-                teams.push({ id: Date.now(), name, record });
-                renderTeams();
-                closeModal();
-                document.getElementById('teamName').value = '';
-                document.getElementById('teamRecord').value = '';
+        // --- ADMIN LOGIC ---
+        function toggleAdminLogin() {
+            if (isAdmin) return;
+            openModal('loginModal');
+        }
+
+        function checkPassword() {
+            const input = document.getElementById('adminPassword').value;
+            if (input === PASSWORD) {
+                isAdmin = true;
+                localStorage.setItem('ucfl_isAdmin', 'true');
+                closeModal('loginModal');
+                updateAdminUI();
+                alert("Admin Access Granted");
+            } else {
+                alert("Wrong password");
             }
         }
 
-        function removeTeam(index) {
-            teams.splice(index, 1);
-            renderTeams();
+        function logout() {
+            isAdmin = false;
+            localStorage.setItem('ucfl_isAdmin', 'false');
+            updateAdminUI();
         }
 
-        function openModal() { document.getElementById('teamModal').classList.add('active'); }
-        function closeModal() { document.getElementById('teamModal').classList.remove('active'); }
+        function updateAdminUI() {
+            const body = document.body;
+            const logoutBtn = document.getElementById('logoutBtn');
+            const loginBtn = document.getElementById('loginBtn');
 
-        // Initial Load
-        renderTeams();
+            if (isAdmin) {
+                body.classList.add('is-admin');
+                loginBtn.classList.add('hidden');
+                logoutBtn.classList.remove('hidden');
+                logoutBtn.style.display = 'flex';
+            } else {
+                body.classList.remove('is-admin');
+                loginBtn.classList.remove('hidden');
+                logoutBtn.classList.add('hidden');
+            }
+        }
+
+        // --- DATA MANAGEMENT ---
+        function addTeam() {
+            const name = document.getElementById('teamName').value;
+            const wins = document.getElementById('teamWins').value;
+            const losses = document.getElementById('teamLosses').value;
+
+            if (name) {
+                teams.push({
+                    id: Date.now(),
+                    name: name,
+                    wins: wins || 0,
+                    losses: losses || 0,
+                    rank: teams.length + 1
+                });
+                saveData();
+                closeModal('teamModal');
+                
+                // Clear inputs
+                document.getElementById('teamName').value = '';
+                document.getElementById('teamWins').value = '';
+                document.getElementById('teamLosses').value = '';
+            }
+        }
+
+        function deleteTeam(id) {
+            if(!confirm("Are you sure you want to delete this team?")) return;
+            teams = teams.filter(t => t.id !== id);
+            saveData();
+        }
+
+        function editStat(key) {
+            if (!isAdmin) return;
+            const newVal = prompt(`Update ${key}:`, stats[key]);
+            if (newVal) {
+                stats[key] = newVal;
+                localStorage.setItem('ucfl_stats', JSON.stringify(stats));
+                render();
+            }
+        }
+
+        function saveData() {
+            localStorage.setItem('ucfl_teams', JSON.stringify(teams));
+            render();
+        }
+
+        // --- UTILS ---
+        function openModal(id) { document.getElementById(id).classList.add('active'); }
+        function closeModal(id) { document.getElementById(id).classList.remove('active'); }
+
     </script>
 </body>
 </html>
