@@ -3,61 +3,103 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>UCFL Dashboard</title>
+    <title>UCFL Admin Dashboard</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
-        body { background-color: #0B0B0B; }
-        .glass-card { background: #141414; border: 1px solid #262626; }
+        body { background-color: #0B0B0B; color: white; font-family: sans-serif; }
+        .glass-card { background: #141414; border: 1px solid #262626; transition: all 0.2s; }
+        .modal { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.8); align-items: center; justify-content: center; z-index: 50; }
+        .modal.active { display: flex; }
     </style>
 </head>
-<body class="text-white">
+<body>
     <div class="flex h-screen">
         <aside class="w-64 border-r border-zinc-800 p-6 flex flex-col">
             <h1 class="text-2xl font-black italic tracking-tighter mb-10 text-blue-500">UCFL</h1>
-            <nav class="space-y-6 text-zinc-400 font-medium">
-                <a href="#" class="block text-white">Home</a>
-                <a href="#" class="block hover:text-white">Standings</a>
-                <a href="#" class="block hover:text-white">Playoffs</a>
-                <a href="#" class="block hover:text-white">Teams</a>
+            <nav class="space-y-4 text-zinc-400 font-medium">
+                <button onclick="showSection('home')" class="nav-btn block w-full text-left text-white hover:text-blue-400 transition">Home</button>
+                <button onclick="showSection('teams')" class="nav-btn block w-full text-left hover:text-blue-400 transition">Manage Teams</button>
             </nav>
         </aside>
 
         <main class="flex-1 p-10 overflow-y-auto">
-            <header class="mb-10">
-                <h2 class="text-4xl font-bold">Welcome back, Commish</h2>
-                <p class="text-zinc-500">Here is what's happening in the league today.</p>
-            </header>
-
-            <div class="grid grid-cols-1 md:grid-cols-4 gap-6 mb-12">
-                <div class="glass-card p-6 rounded-2xl border-l-4 border-l-blue-500">
-                    <p class="text-zinc-500 text-sm font-semibold uppercase">Total Teams</p>
-                    <h3 class="text-3xl font-bold mt-1">8</h3>
-                </div>
-                <div class="glass-card p-6 rounded-2xl border-l-4 border-l-green-500">
-                    <p class="text-zinc-500 text-sm font-semibold uppercase">Games Played</p>
-                    <h3 class="text-3xl font-bold mt-1">24</h3>
-                </div>
-                <div class="glass-card p-6 rounded-2xl border-l-4 border-l-purple-500">
-                    <p class="text-zinc-500 text-sm font-semibold uppercase">Discord Members</p>
-                    <h3 class="text-3xl font-bold mt-1">142</h3>
-                </div>
-                <div class="glass-card p-6 rounded-2xl border-l-4 border-l-orange-500">
-                    <p class="text-zinc-500 text-sm font-semibold uppercase">Current Season</p>
-                    <h3 class="text-3xl font-bold mt-1">S4</h3>
-                </div>
-            </div>
-
-            <h3 class="text-2xl font-bold mb-6">Top Teams</h3>
-            <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
-                <div class="glass-card p-6 rounded-3xl relative overflow-hidden">
-                    <span class="absolute top-4 right-6 text-zinc-800 text-6xl font-black">#1</span>
-                    <div class="relative z-10">
-                        <h4 class="text-xl font-bold">South Carolina</h4>
-                        <p class="text-green-400 font-mono mt-1">4 - 1</p>
+            <section id="home-section">
+                <header class="flex justify-between items-center mb-10">
+                    <div>
+                        <h2 class="text-4xl font-bold">League Overview</h2>
+                        <p class="text-zinc-500">Real-time stats for the UCFL.</p>
                     </div>
-                </div>
-            </div>
+                    <button onclick="openModal()" class="bg-blue-600 hover:bg-blue-700 px-6 py-2 rounded-full font-bold">+ Add Team</button>
+                </header>
+
+                <div class="grid grid-cols-1 md:grid-cols-4 gap-6 mb-12" id="stats-grid">
+                    </div>
+
+                <h3 class="text-2xl font-bold mb-6">Current Rankings</h3>
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-6" id="team-list">
+                    </div>
+            </section>
         </main>
     </div>
+
+    <div id="teamModal" class="modal p-4">
+        <div class="bg-[#1a1a1a] p-8 rounded-3xl border border-zinc-800 w-full max-w-md">
+            <h2 class="text-2xl font-bold mb-6">Add New Team</h2>
+            <div class="space-y-4">
+                <input type="text" id="teamName" placeholder="Team Name" class="w-full bg-[#0b0b0b] border border-zinc-700 p-3 rounded-xl focus:outline-none focus:border-blue-500">
+                <input type="text" id="teamRecord" placeholder="Record (e.g. 4-1)" class="w-full bg-[#0b0b0b] border border-zinc-700 p-3 rounded-xl focus:outline-none focus:border-blue-500">
+                <div class="flex gap-3 mt-6">
+                    <button onclick="closeModal()" class="flex-1 text-zinc-400 hover:text-white">Cancel</button>
+                    <button onclick="addTeam()" class="flex-1 bg-blue-600 p-3 rounded-xl font-bold">Save Team</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let teams = JSON.parse(localStorage.getItem('ucfl-teams')) || [
+            { id: 1, name: "South Carolina", record: "4-1" }
+        ];
+
+        function renderTeams() {
+            const container = document.getElementById('team-list');
+            container.innerHTML = '';
+            
+            teams.forEach((team, index) => {
+                container.innerHTML += `
+                    <div class="glass-card p-6 rounded-3xl relative group">
+                        <button onclick="removeTeam(${index})" class="absolute top-4 right-4 text-zinc-600 hover:text-red-500 opacity-0 group-hover:opacity-100 transition">✕</button>
+                        <span class="text-zinc-700 text-5xl font-black absolute bottom-4 right-6 italic">#${index + 1}</span>
+                        <h4 class="text-xl font-bold">${team.name}</h4>
+                        <p class="text-blue-400 font-mono mt-1 uppercase text-sm tracking-widest">${team.record}</p>
+                    </div>
+                `;
+            });
+            localStorage.setItem('ucfl-teams', JSON.stringify(teams));
+        }
+
+        function addTeam() {
+            const name = document.getElementById('teamName').value;
+            const record = document.getElementById('teamRecord').value;
+            if(name && record) {
+                teams.push({ id: Date.now(), name, record });
+                renderTeams();
+                closeModal();
+                document.getElementById('teamName').value = '';
+                document.getElementById('teamRecord').value = '';
+            }
+        }
+
+        function removeTeam(index) {
+            teams.splice(index, 1);
+            renderTeams();
+        }
+
+        function openModal() { document.getElementById('teamModal').classList.add('active'); }
+        function closeModal() { document.getElementById('teamModal').classList.remove('active'); }
+
+        // Initial Load
+        renderTeams();
+    </script>
 </body>
 </html>
